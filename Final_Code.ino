@@ -7,13 +7,12 @@ void setup() {
   delay(200);
   Serial.begin(115200);\
   
-  pinMode(Timer, INPUT);
+//  pinMode(Timer, INPUT);
   pinMode(TempPin1, INPUT);                                         //Declare pin to read temperature switch as an input
   pinMode(TempPin2, INPUT);                                         //Declare pin to read temperature switch as an input
   pinMode(TimePin, INPUT);                                          //Declare pin to read timer switch as an input
   pinMode(Button, INPUT);                                           //Declare pin to read start button as an input
   pinMode(RelayCheck, INPUT);                                       //Declare pin to check if the relay is open or closed as an input
-  pinMode(RelayPin, OUTPUT);                                        //Declare pin to toggle the latch on the relay as an output
   pinMode(LedPin, OUTPUT);                                          //Declare pin to turn on/off the light in the power button output
   pinMode(CoilRelayPin, OUTPUT);                                    //Declare pin to toggle the latch on the relay as an output
   
@@ -66,14 +65,14 @@ void tempCheck() {                                                  // Check if 
   }
 
                                                                     // Control temperature to keep within desired range
-  if ((temp < SetTemp - 0.2) && (digitalRead(RelayCheck) == LOW)) { // Close the relay if the temperature is 0.2 degrees below the desired temperature
+  if ((temp < SetTemp - 0.5) && (digitalRead(RelayCheck) == LOW)) { // Close the relay if the temperature is 0.2 degrees below the desired temperature
     digitalWrite(CoilRelayPin, LOW);                                //This will provide power to the coil, heating up the bandage
     delay(20);
     digitalWrite(CoilRelayPin, HIGH);
     delay(1000);
   }
 
-  if ((temp >= SetTemp + 0.2) && (digitalRead(RelayCheck) == HIGH)) {//Open the relay if the temperature is 0.2 degrees above the desired temperature
+  if ((temp >= SetTemp - 0.5) && (digitalRead(RelayCheck) == HIGH)) {//Open the relay if the temperature is 0.2 degrees above the desired temperature
     digitalWrite(CoilRelayPin, LOW);                                 //This will remove power from the coil, allowing the bandage to cool
     delay(20);
     digitalWrite(CoilRelayPin, HIGH);
@@ -257,10 +256,12 @@ void initDisplay() {                                                  //Prints a
 
 void loop () {
     display.clearDisplay();                                         //Clear the display
-    display.setTextSize(3);                                         //Set Text Size to one for the top line
+    display.setTextSize(2);                                         //Set Text Size to one for the top line
     display.setTextColor(WHITE);                                    //Set the text color to white
     display.setCursor(0, 0);                                        //Set cursor on first line of the screen to start printing
     display.println();                                              //Leaves top line blank
+    display.println(" Press");                                      //Leaves top line blank
+    display.println(" Start");                                      //Leaves top line blank
     display.display();                                              //Prints contents of display buffer onto display
     
   if ((digitalRead(RelayCheck) == HIGH)&&initRelay==LOW) {          //If the relay is on when the device is powered on, it is toggled low immediately to keep the device from heating uncontrollably and/or keep the relay state from being inverted upon launch
@@ -270,17 +271,16 @@ void loop () {
     delay(3500);
     initRelay=HIGH;                                                 //Tell the system that the relay is now intialized to be open, and it is ready for operation
   }
+  if(millis()%1000<=500)
+    digitalWrite(LedPin, LOW);                                     //Turn on the light in the button
+  else
+    digitalWrite(LedPin, HIGH);                                     //Turn on the light in the button
   
   StandbyTime = millis();                                           //Keep track of how long the device waits for the user to press the button. This is used for calculating the runtime of the device.
   
   if (startButton() == HIGH) {                                      //Loop until the user presses the Start button. The user must press the button to start the program. Otherwise it'll loop forever.
     digitalWrite(LedPin, HIGH);                                     //Turn on the light in the button
     initDisplay();                                                  //Function to show a "loading screen" of sorts on the screen.
-
-    digitalWrite(RelayPin, LOW);                                    //Brings pin tied to the latch on the relay to low
-    delay(20);                                                      //waits for 20 ms
-    digitalWrite(RelayPin, HIGH);                                   //Brings pin tied to the relay to high, flipping the latch on the relay
-
     Main();                                                         //Goes to main function of device
   }
 }
